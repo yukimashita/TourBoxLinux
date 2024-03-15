@@ -1,0 +1,9 @@
+[Unit]
+Description=TourBoxLinux
+
+[Service]
+Type=simple
+ExecStart=@PREFIX@/bin/tourboxlinux
+
+[Install]
+WantedBy=default.target

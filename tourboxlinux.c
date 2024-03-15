@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <sys/file.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -557,6 +558,8 @@ int tourbox_setup(const char *dev)
 
     if ((fd = open(dev, O_RDWR|O_NOCTTY|O_NONBLOCK)) < 0)
         err(1, "open");
+    if (flock(fd, LOCK_EX|LOCK_NB) < 0)
+        err(1, "flock");
 
     if (tcgetattr(fd, &oterm) < 0)
         err(1, "tcgetattr");

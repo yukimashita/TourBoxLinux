@@ -1,0 +1,2 @@
+ACTION=="add", SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2e3c", ENV{ID_MODEL_ID}=="5740", SYMLINK+="tourbox%n", RUN+="/usr/bin/systemctl start tourboxlinux.service"
+ACTION=="remove", SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2e3c", ENV{ID_MODEL_ID}=="5740", RUN+="/usr/bin/systemctl stop tourboxlinux.service"
