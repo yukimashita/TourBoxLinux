@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <termios.h>
 #include <signal.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <err.h>
 
@@ -279,16 +280,16 @@ const struct tbk_keymap keymaps[] = {
     // DIAL
     {
         TBK_DIAL_RIGHT,
-        KEY_EQUAL,
+        KEY_DOT,
         0,
-        modifier_shift,
+        modifier_control|modifier_alt,
         key_input
     },
     {
         TBK_DIAL_LEFT,
-        KEY_MINUS,
+        KEY_DOT,
         0,
-        modifier_none,
+        modifier_control|modifier_alt|modifier_shift,
         key_input
     },
     {
@@ -302,16 +303,16 @@ const struct tbk_keymap keymaps[] = {
     // D-PAD
     {
         TBK_UP_PUSH,
-        KEY_LEFTBRACE,
+        KEY_DOT,
         0,
-        modifier_none,
+        modifier_control|modifier_alt|modifier_shift,
         key_push
     },
     {
         TBK_UP_RELEASE,
-        KEY_LEFTBRACE,
+        KEY_DOT,
         0,
-        modifier_none,
+        modifier_control|modifier_alt|modifier_shift,
         key_release
     },
     {
@@ -330,16 +331,16 @@ const struct tbk_keymap keymaps[] = {
     },
     {
         TBK_DOWN_PUSH,
-        KEY_RIGHTBRACE,
+        KEY_DOT,
         0,
-        modifier_none,
+        modifier_control|modifier_alt,
         key_push
     },
     {
         TBK_DOWN_RELEASE,
-        KEY_RIGHTBRACE,
+        KEY_DOT,
         0,
-        modifier_none,
+        modifier_control|modifier_alt,
         key_release
     },
     {
@@ -493,7 +494,26 @@ void uinput_destroy(int fd)
 int tourbox_setup(const char *dev)
 {
     int fd;
+    ssize_t n;
     struct termios oterm, term;
+    char buf[256];
+    static const uint8_t magic1[] = {
+        0x55, 0x00, 0x07, 0x88, 0x94, 0x00, 0x1a, 0xfe
+    };
+    static const uint8_t magic2[] = {
+        0xb5, 0x00, 0x5d, 0x04, 0x08, 0x05, 0x08, 0x06,
+        0x08, 0x07, 0x08, 0x08, 0x08, 0x09, 0x08, 0x0b,
+        0x08, 0x0c, 0x08, 0x0d, 0x08, 0x0e, 0x08, 0x0f,
+        0x08, 0x26, 0x08, 0x27, 0x08, 0x28, 0x08, 0x29,
+        0x08, 0x3b, 0x08, 0x3c, 0x08, 0x3d, 0x08, 0x3e,
+        0x08, 0x3f, 0x08, 0x40, 0x08, 0x41, 0x08, 0x42,
+        0x08, 0x43, 0x08, 0x44, 0x08, 0x45, 0x08, 0x46,
+        0x08, 0x47, 0x08, 0x48, 0x08, 0x49, 0x08, 0x4a,
+        0x08, 0x4b, 0x08, 0x4c, 0x08, 0x4d, 0x08, 0x4e,
+        0x08, 0x4f, 0x08, 0x50, 0x08, 0x51, 0x08, 0x52,
+        0x08, 0x53, 0x08, 0x54, 0x08, 0xa8, 0x08, 0xa9,
+        0x08, 0xaa, 0x08, 0xab, 0x08, 0xfe
+    };
 
     if ((fd = open(dev, O_RDWR|O_NOCTTY|O_NONBLOCK)) < 0)
         err(1, "open");
@@ -508,6 +528,15 @@ int tourbox_setup(const char *dev)
         err(1, "tcflush");
     if (tcsetattr(fd, TCSAFLUSH, &term) < 0)
         err(1, "tcsetattr");
+
+    if (write(fd, magic1, sizeof(magic1)) != sizeof(magic1))
+        err(1, "write");
+    usleep(100000);
+    n = read(fd, buf, sizeof(buf));
+    (void)n;
+
+    if (write(fd, magic2, sizeof(magic2)) != sizeof(magic2))
+        err(1, "write");
 
     return fd;
 }
