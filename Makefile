@@ -1,7 +1,7 @@
 TARGETS = tourboxlinux
 
 CFLAGS = -O2 -Wall -Wextra
-DESTDIR = $${HOME}/bin
+PREFIX = /usr/local
 
 .PHONY: all clean install uninstall install-service uninstall-service
 
@@ -13,22 +13,11 @@ clean:
 	-rm -f $(TARGETS) *~ tourboxlinux.o \#*
 
 install: tourboxlinux
-	install tourboxlinux -Dt $(DESTDIR)
+	sudo install tourboxlinux -Dt $(PREFIX)/bin
+	sudo cp 90-tourbox.rules /etc/udev/rules.d
+	sudo udevadm control --reload
+	echo 'Please reconnect TourBox'
 
 uninstall:
-	-rm $(DESTDIR)/tourboxlinux
-
-install-service: install
-	-mkdir -p ~/.config/systemd/user
-	cp tourboxlinux.service ~/.config/systemd/user
-	sed -i -e "s;@DESTDIR@;$(DESTDIR);" ~/.config/systemd/user/tourboxlinux.service
-	systemctl --user daemon-reload
-	systemctl --user enable tourboxlinux.service
-	systemctl --user start tourboxlinux.service
-	systemctl --user daemon-reload
-
-uninstall-service:
-	-systemctl --user disable tourboxlinux.service
-	-systemctl --user stop tourboxlinux.service
-	-rm -f ~/.config/systemd/user/tourboxlinux.service
-	-systemctl --user daemon-reload
+	-rm $(PREFIX)/bin/tourboxlinux /etc/udev/rules.d/90-tourbox.rules
+	sudo udevadm control --reload

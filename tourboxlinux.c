@@ -1,3 +1,4 @@
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,6 +6,7 @@
 #include <getopt.h>
 #include <termios.h>
 #include <signal.h>
+#include <dirent.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <err.h>
@@ -491,12 +493,45 @@ void uinput_destroy(int fd)
     close(fd);
 }
 
+int hasprefix(const char *whole_string, const char *prefix)
+{
+    size_t len = strlen(prefix);
+
+    return !strncmp(whole_string, prefix, len);
+}
+
+const char *find_device(char *dev, size_t dev_size)
+{
+    const char *r;
+    DIR *dir;
+    struct dirent *dp;
+
+    if (!dev || !dev_size)
+        return NULL;
+
+    dev[0] = '\0';
+    if (!(dir = opendir("/dev")))
+        return NULL;
+
+    r = NULL;
+    while ((dp = readdir(dir))) {
+        if (!hasprefix(dp->d_name, "tourbox"))
+            continue;
+        snprintf(dev, dev_size, "/dev/%s", dp->d_name);
+        r = dev;
+        break;
+    }
+    closedir(dir);
+
+    return r;
+}
+
 int tourbox_setup(const char *dev)
 {
     int fd;
     ssize_t n;
     struct termios oterm, term;
-    char buf[256];
+    char buf[PATH_MAX];
     static const uint8_t magic1[] = {
         0x55, 0x00, 0x07, 0x88, 0x94, 0x00, 0x1a, 0xfe
     };
@@ -514,6 +549,11 @@ int tourbox_setup(const char *dev)
         0x08, 0x53, 0x08, 0x54, 0x08, 0xa8, 0x08, 0xa9,
         0x08, 0xaa, 0x08, 0xab, 0x08, 0xfe
     };
+
+    if (!dev) {
+        if (!(dev = find_device(buf, sizeof(buf))))
+            err(1, "find_device");
+    }
 
     if ((fd = open(dev, O_RDWR|O_NOCTTY|O_NONBLOCK)) < 0)
         err(1, "open");
@@ -565,7 +605,7 @@ int main(int argc, char *argv[])
 
     daemonize = 0;
     verbose = 0;
-    dev = "/dev/ttyACM0";
+    dev = NULL;
     while ((c = getopt(argc, argv, "vd:")) != -1) {
         switch (c) {
           case 'D':

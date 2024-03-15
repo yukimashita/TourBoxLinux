@@ -1,0 +1,2 @@
+ACTION=="add", ATTRS{idVendor}=="2e3c", ATTRS{idProduct}=="5740", SYMLINK+="tourbox%n"
+ACTION=="remove", ATTRS{idVendor}=="2e3c", ATTRS{idProduct}=="5740", SYMLINK+="tourbox%n"
